@@ -22,3 +22,6 @@ pillow
 
 # For creating a web application
 streamlit
+
+supabase
+
