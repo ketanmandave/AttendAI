@@ -25,3 +25,8 @@ streamlit
 
 supabase
 
+# For embedding the voice
+librosa
+
+# Edit, load voice
+resemblyzer
