@@ -55,34 +55,10 @@ def style_background_home():
         <style>
 
         .stApp {
-
             background:
-                radial-gradient(
-                    ellipse at 20% 20%,
-                    rgba(30, 64, 175, 0.20) 0%,
-                    transparent 50%
-                ),
-
-                radial-gradient(
-                    ellipse at 80% 80%,
-                    rgba(124, 58, 237, 0.20) 0%,
-                    transparent 50%
-                ),
-
-                radial-gradient(
-                    ellipse at 50% 50%,
-                    rgba(14, 165, 233, 0.12) 0%,
-                    transparent 70%
-                ),
-
-                linear-gradient(
-                    135deg,
-                    #0a0f1e 0%,
-                    #0f172a 40%,
-                    #1a1040 70%,
-                    #0d1b3e 100%
-                );
-
+                radial-gradient(circle at 10% 0%, rgba(15, 118, 110, .07), transparent 30%),
+                radial-gradient(circle at 95% 15%, rgba(180, 83, 9, .045), transparent 28%),
+                #f7f7f5;
             min-height: 100vh;
         }
 
@@ -104,15 +80,7 @@ def style_background_dashboard():
         <style>
 
         .stApp {
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #f4f7ff 0%,
-                    #eaf1ff 45%,
-                    #f7f3ff 100%
-                );
-
+            background: #f7f7f5;
             min-height: 100vh;
         }
 
@@ -120,6 +88,222 @@ def style_background_dashboard():
         """
     )
 
+def style_professional_theme():
+    """Final shared theme overrides for a compact, neutral product UI."""
+    st.html(
+        """
+        <style>
+        :root {
+            --ai-ink: #17201f;
+            --ai-muted: #66706e;
+            --ai-line: #dfe3e1;
+            --ai-surface: #ffffff;
+            --ai-subtle: #f1f3f2;
+            --ai-accent: #0f766e;
+            --ai-accent-dark: #115e59;
+            --ai-accent-soft: #e7f3f1;
+            --ai-danger: #b42318;
+        }
+
+        .block-container {
+            max-width: 1120px !important;
+            padding-top: 18px !important;
+            padding-bottom: 32px !important;
+        }
+
+        .stApp::before,
+        .stApp::after { display: none !important; }
+
+        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4,
+        div[data-testid="stHeading"] h1,
+        div[data-testid="stHeading"] h2,
+        div[data-testid="stHeading"] h3,
+        div[data-testid="stHeadingWithActionElements"] h3 {
+            color: var(--ai-ink) !important;
+            letter-spacing: -.025em !important;
+        }
+
+        .stMarkdown p, div[data-testid="stCaptionContainer"] p {
+            color: var(--ai-muted) !important;
+        }
+
+        div.stButton > button {
+            min-height: 40px !important;
+            border-radius: 9px !important;
+            border: 1px solid var(--ai-line) !important;
+            background: var(--ai-surface) !important;
+            color: #34403e !important;
+            font-size: 13px !important;
+            font-weight: 650 !important;
+            letter-spacing: 0 !important;
+            box-shadow: 0 1px 2px rgba(23, 32, 31, .05) !important;
+            transform: none !important;
+        }
+
+        div.stButton > button::before { display: none !important; }
+
+        div.stButton > button[kind="primary"] {
+            border-color: var(--ai-accent) !important;
+            background: var(--ai-accent) !important;
+            color: #ffffff !important;
+            box-shadow: 0 1px 2px rgba(15, 118, 110, .18) !important;
+        }
+
+        div.stButton > button[kind="primary"]:hover {
+            border-color: var(--ai-accent-dark) !important;
+            background: var(--ai-accent-dark) !important;
+        }
+
+        div.stButton > button[kind="secondary"]:hover {
+            border-color: #aeb7b4 !important;
+            background: #f8f9f8 !important;
+            color: var(--ai-ink) !important;
+        }
+
+        div.stButton > button[kind="tertiary"] {
+            border-color: transparent !important;
+            background: transparent !important;
+            color: #52605d !important;
+            box-shadow: none !important;
+        }
+
+        div.stButton > button:disabled {
+            border-color: #e2e5e4 !important;
+            background: #eef0ef !important;
+            color: #9ba3a1 !important;
+            opacity: 1 !important;
+        }
+
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {
+            padding: 20px 22px !important;
+            border: 1px solid var(--ai-line) !important;
+            border-radius: 13px !important;
+            background: rgba(255, 255, 255, .96) !important;
+            box-shadow: 0 2px 8px rgba(23, 32, 31, .035) !important;
+        }
+
+        div[data-baseweb="input"],
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="textarea"] {
+            border-color: #cfd5d3 !important;
+            border-radius: 9px !important;
+            background: #ffffff !important;
+            box-shadow: none !important;
+        }
+
+        div[data-baseweb="input"]:focus-within,
+        div[data-baseweb="select"] > div:focus-within,
+        div[data-baseweb="textarea"]:focus-within {
+            border-color: var(--ai-accent) !important;
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, .10) !important;
+        }
+
+        div[data-testid="stFileUploaderDropzone"] {
+            min-height: 92px !important;
+            padding: 14px !important;
+            border: 1px dashed #b9c2bf !important;
+            border-radius: 10px !important;
+            background: #fafbfa !important;
+        }
+
+        div[data-testid="stDataFrame"],
+        div[data-testid="stTable"] {
+            border: 1px solid var(--ai-line);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        div[data-testid="stMetric"] {
+            padding: 12px 14px;
+            border: 1px solid var(--ai-line);
+            border-radius: 10px;
+            background: var(--ai-surface);
+        }
+
+        div[data-testid="stAlert"] {
+            border-radius: 10px !important;
+            border-width: 1px !important;
+            box-shadow: none !important;
+        }
+
+        hr {
+            margin: 14px 0 !important;
+            background: var(--ai-line) !important;
+        }
+
+        div[data-testid="stDialog"] [role="dialog"] {
+            max-width: 680px !important;
+            max-height: min(84vh, 760px) !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain;
+            border: 1px solid #d7dcda !important;
+            border-radius: 14px !important;
+            background: #ffffff !important;
+            box-shadow: 0 18px 50px rgba(23, 32, 31, .16) !important;
+        }
+
+        div[data-testid="stDialog"] [role="dialog"] > div {
+            padding: 18px 20px !important;
+        }
+
+        div[data-testid="stDialog"] h2 {
+            font-size: 19px !important;
+            color: var(--ai-ink) !important;
+        }
+
+        div[data-baseweb="tab-highlight"] { background-color:var(--ai-accent)!important; }
+        div[data-baseweb="tab-border"] { background-color:var(--ai-line)!important; }
+
+        .ai-portal-intro { margin: 4px 0 24px; text-align:center; }
+        .ai-portal-intro p { margin:0 0 6px!important; color:var(--ai-accent)!important; font-size:9px!important; font-weight:800; letter-spacing:1.5px; }
+        .ai-portal-intro h2 { margin:0 0 5px!important; color:var(--ai-ink)!important; font-size:23px!important; letter-spacing:-.5px!important; }
+        .ai-portal-intro span { color:var(--ai-muted); font-size:12px; }
+
+        .portal-card {
+            border:1px solid var(--ai-line)!important;
+            border-radius:14px!important;
+            background:#ffffff!important;
+            box-shadow:0 2px 10px rgba(23,32,31,.04)!important;
+            margin-bottom:10px!important;
+        }
+        .portal-card:hover { transform:translateY(-2px)!important; border-color:#b9c5c2!important; box-shadow:0 8px 20px rgba(23,32,31,.07)!important; }
+        .portal-image { height:168px!important; filter:saturate(.78) contrast(.96)!important; }
+        .portal-card:hover .portal-image { transform:none!important; filter:saturate(.86)!important; }
+        .portal-content { padding:18px 20px 20px!important; }
+        .portal-label { margin-bottom:6px!important; color:var(--ai-accent)!important; font-size:9px!important; letter-spacing:1.4px!important; }
+        .portal-content h3 { margin-bottom:7px!important; color:var(--ai-ink)!important; font-size:19px!important; }
+        .portal-description { margin-bottom:14px!important; color:var(--ai-muted)!important; font-size:11px!important; line-height:1.55!important; }
+        .portal-tags { gap:6px!important; }
+        .portal-tags span { padding:4px 8px!important; border:1px solid #d6dfdc!important; background:#f5f7f6!important; color:#52605d!important; font-size:9px!important; }
+
+        .feature-section { margin-top:30px!important; padding:24px!important; border:1px solid var(--ai-line)!important; border-radius:14px!important; background:#ffffff!important; backdrop-filter:none!important; }
+        .feature-section h3 { margin-bottom:18px!important; color:var(--ai-ink)!important; font-size:18px!important; }
+        .feature-grid { gap:10px!important; }
+        .feature-box { padding:17px 14px!important; border:1px solid #e5e8e7!important; border-radius:10px!important; background:#fafbfa!important; }
+        .feature-box:hover { transform:none!important; border-color:#cbd3d1!important; background:#f7f9f8!important; }
+        .feature-icon { margin-bottom:8px!important; font-size:22px!important; filter:grayscale(.2); }
+        .feature-box h4 { color:var(--ai-ink)!important; font-size:12px!important; }
+        .feature-box p { color:var(--ai-muted)!important; font-size:10px!important; }
+
+        .teacher-auth-heading { margin-top:16px!important; margin-bottom:18px!important; padding:18px 20px!important; border:1px solid var(--ai-line)!important; border-radius:13px!important; background:#ffffff!important; box-shadow:0 2px 8px rgba(23,32,31,.035)!important; }
+        .teacher-auth-icon { width:46px!important; height:46px!important; border-radius:10px!important; background:#17201f!important; box-shadow:none!important; font-size:21px!important; }
+        .teacher-auth-label { color:var(--ai-accent)!important; }
+        .teacher-auth-heading h2 { color:var(--ai-ink)!important; font-size:23px!important; }
+        .teacher-auth-heading p:last-child { color:var(--ai-muted)!important; }
+        .teacher-auth-info { margin-top:14px!important; gap:10px!important; }
+        .teacher-auth-info > div { padding:13px!important; border-color:var(--ai-line)!important; border-radius:10px!important; background:#fff!important; box-shadow:none!important; }
+
+        ::-webkit-scrollbar-thumb { background: #b9c1bf !important; }
+
+        @media (max-width: 768px) {
+            .block-container { padding: 12px 14px 24px !important; }
+            div[data-testid="stVerticalBlockBorderWrapper"] > div {
+                padding: 16px !important;
+            }
+        }
+        </style>
+        """
+    )
 
 # =========================================================
 # BASE LAYOUT
@@ -779,6 +963,8 @@ def style_base_layout():
         """
     )
 
+    style_professional_theme()
+
 
 # =========================================================
 # TEACHER LOGIN / REGISTER
@@ -789,6 +975,13 @@ def style_teacher_auth():
     st.html(
         """
         <style>
+
+        /* Keep authentication focused and readable on wide screens. This
+           style is loaded only for login/register, never for the dashboard. */
+        .block-container {
+            max-width: 780px !important;
+            margin-inline: auto !important;
+        }
 
         /* =================================================
            AUTH PAGE HEADER
@@ -1222,6 +1415,10 @@ def style_teacher_auth():
 
         @media (max-width: 768px) {
 
+            .block-container {
+                max-width: 100% !important;
+            }
+
             .teacher-auth-heading {
 
                 padding:
@@ -1254,6 +1451,63 @@ def style_teacher_auth():
                 grid-template-columns:
                     1fr;
             }
+        }
+
+        /* Professional neutral/teal finish for the teacher portal. */
+        .teacher-auth-heading {
+            margin-top: 14px;
+            margin-bottom: 18px;
+            padding: 18px 20px;
+            border: 1px solid #d7dcda;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 2px 12px rgba(23, 32, 31, .04);
+        }
+
+        .teacher-auth-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: #17201f;
+            box-shadow: none;
+        }
+
+        .teacher-auth-label {
+            color: #0f766e !important;
+        }
+
+        .teacher-auth-heading h2,
+        .teacher-auth-info strong {
+            color: #17201f !important;
+        }
+
+        .teacher-auth-heading p:last-child,
+        .teacher-auth-info p {
+            color: #64706d !important;
+        }
+
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border: 1px solid #d7dcda !important;
+            border-radius: 14px !important;
+            background: #ffffff !important;
+            box-shadow: 0 4px 18px rgba(23, 32, 31, .05) !important;
+        }
+
+        div[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {
+            border-color: #0f766e !important;
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, .10) !important;
+        }
+
+        .teacher-auth-info {
+            margin-top: 16px;
+            gap: 10px;
+        }
+
+        .teacher-auth-info > div {
+            padding: 13px 14px;
+            border: 1px solid #dfe4e2;
+            border-radius: 12px;
+            box-shadow: none;
         }
 
         </style>

@@ -221,7 +221,11 @@ def predict_attendance(classroom_image):
         # STEP D: VERIFY MATCH
         # ------------------------------------------
 
-        match_threshold = 0.6
+        # A classifier cannot discriminate identities when only one student is
+        # registered. In that case use a stricter direct-embedding comparison
+        # so an unrelated face is not automatically attributed to that one
+        # student. Multi-student predictions retain the standard tolerance.
+        match_threshold = 0.45 if len(registered_students) == 1 else 0.6
 
 
         if face_distance <= match_threshold:

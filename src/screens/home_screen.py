@@ -19,44 +19,10 @@ def home_screen():
 
     # Page title
     st.html("""
-        <div style="
-            text-align: center;
-            margin-bottom: 38px;
-        ">
-            <p style="
-                display: inline-block;
-                color: #67e8f9;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 3px;
-                margin-bottom: 12px;
-                background: rgba(6,182,212,0.12);
-                border: 1px solid rgba(6,182,212,0.25);
-                padding: 5px 16px;
-                border-radius: 100px;
-            ">
-                ✦ &nbsp;GET STARTED &nbsp;✦
-            </p>
-
-            <h2 style="
-                color: white;
-                font-size: 34px;
-                font-weight: 800;
-                margin: 0 0 8px 0;
-                letter-spacing: -0.8px;
-                line-height: 1.1;
-            ">
-                Choose Your Portal
-            </h2>
-
-            <p style="
-                color: #64748b;
-                margin: 0;
-                font-size: 15px;
-                font-weight: 400;
-            ">
-                Select your role to continue with AttendIQ
-            </p>
+        <div class="ai-portal-intro">
+            <p>CHOOSE YOUR WORKSPACE</p>
+            <h2>Continue as teacher or student</h2>
+            <span>Select the workspace that matches what you need to do.</span>
         </div>
         """)
 
@@ -116,6 +82,7 @@ def home_screen():
 
         if st.button(
             "Open Teacher Portal →",
+            type="primary",
             key="teacher_portal",
             width="stretch",
         ):
@@ -176,6 +143,7 @@ def home_screen():
 
         if st.button(
             "Open Student Portal →",
+            type="primary",
             key="student_portal",
             width="stretch",
         ):

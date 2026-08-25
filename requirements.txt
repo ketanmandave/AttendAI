@@ -1,3 +1,6 @@
+# For creating a web application
+streamlit
+
 numpy
 pandas
 # face recognition
@@ -20,8 +23,6 @@ segno
 # Helps in image processing
 pillow
 
-# For creating a web application
-streamlit
 
 supabase
 
