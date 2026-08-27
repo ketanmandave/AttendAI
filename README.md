@@ -1,12 +1,250 @@
-# ON GIT BASH
+# AttendIQ
+
+AttendIQ is an AI-assisted classroom attendance system built with Streamlit. It combines face recognition, voice verification, subject enrollment, lecture-based attendance records, and teacher review tools in one responsive application.
+
+## Live application
+
+**[Open AttendIQ](https://attendai-v2.streamlit.app/)**
+
+> Camera and microphone capture depend on browser support and permissions. Image and audio upload options are available when direct recording is unavailable.
+
+## Features
+
+### Teacher portal
+
+- Secure registration and bcrypt password authentication
+- Persistent 30-day login with revocable database sessions
+- Create subjects and share enrollment codes or QR links
+- Capture or upload multiple classroom photos
+- Take attendance from recorded or uploaded classroom audio
+- Review AI-generated present and absent results before saving
+- Keep each lecture as a separate attendance session
+- Correct attendance manually while preserving an audit reason
+- Download attendance results and session summaries as CSV files
+
+### Student portal
+
+- Register face and voice biometric profiles
+- Sign in using face or voice verification
+- Enroll using a subject code or shared link
+- View enrolled subjects and personal attendance statistics
+- Unenroll from a subject
+
+## Attendance workflow
+
+1. A teacher creates a subject and shares its enrollment code or QR link.
+2. Students register their biometric profiles and enroll in the subject.
+3. The teacher selects a subject and adds classroom photos or audio.
+4. AttendIQ compares detected identities with enrolled student profiles.
+5. The teacher reviews and, if necessary, corrects the generated result.
+6. Confirmation creates a dedicated lecture session and attendance records in Supabase.
+7. Attendance Records displays every lecture separately and provides downloadable reports.
+
+## Technology stack
+
+- **Application and UI:** Streamlit
+- **Database:** Supabase/PostgreSQL
+- **Face recognition:** dlib, face-recognition models, and scikit-learn
+- **Voice recognition:** Resemblyzer and librosa
+- **Data processing:** NumPy and pandas
+- **Authentication:** bcrypt and hashed, revocable session tokens
+- **Browser session cookie:** extra-streamlit-components
+- **QR codes:** Segno
+
+## Project structure
+
+```text
+AttendIQ/
+├── app.py                         # Streamlit entry point
+├── requirements.txt               # Python dependencies
+├── tests/
+│   ├── test_feature1.py           # Multi-sample face recognition tests
+│   ├── test_feature1_ui.py        # Feature 1 interface tests
+│   ├── test_feature2.py           # Lecture sessions and audit tests
+│   └── test_session_management.py # Persistent login tests
+└── src/
+    ├── auth/                      # Teacher session lifecycle
+    ├── components/                # Dialogs, cards, header, and footer
+    ├── database/
+    │   ├── config.py              # Supabase client configuration
+    │   ├── db.py                  # Database queries and mutations
+    │   └── dbCreation.sql         # PostgreSQL schema
+    ├── pipelines/
+    │   ├── facePipeline.py        # Face embedding and recognition
+    │   └── voicePipeline.py       # Voice embedding and matching
+    ├── screens/                   # Home, teacher, and student screens
+    └── ui/                        # Shared application styling
+```
+
+## Local setup
+
+### 1. Clone the repository
+
+```bash
+git clone <your-repository-url>
+cd <repository-directory>
+```
+
+### 2. Create and activate a virtual environment
+
+Windows PowerShell:
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+Git Bash:
+
+```bash
 python -m venv venv
 source venv/Scripts/activate
+```
 
-# TO Run sreamlit 
-streamlit run app.py
+### 3. Install dependencies
 
-## Rendering:
-Use st.markdown() for Markdown/text and very small inline HTML.
-Use st.html() when you are writing proper HTML components with <div>, <h1>, <p>, custom layout, etc.
-Keep CSS in <style>...</style> and render it with st.html() too if you want to avoid Markdown parsing issues.
-If Streamlit suddenly displays your HTML tags as text, suspect the renderer, not your CSS first.
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Always install and run the application from the same virtual environment. Native face-recognition dependencies can take additional time to install and require a Python/platform combination supported by dlib.
+
+### 4. Create the Supabase database
+
+1. Create a Supabase project.
+2. Open its SQL Editor.
+3. For a new database, run [`src/database/dbCreation.sql`](src/database/dbCreation.sql).
+4. Copy the project URL and API key from the Supabase project settings.
+
+The schema contains:
+
+- `teachers`
+- `user_sessions`
+- `students`
+- `subjects`
+- `subject_student`
+- `attendance_sessions`
+- `attendance_logs`
+- `attendance_corrections`
+
+For an existing database that does not yet support persistent teacher login, run:
+
+```sql
+CREATE TABLE user_sessions (
+    session_id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    teacher_id BIGINT NOT NULL REFERENCES teachers(teacher_id) ON DELETE CASCADE,
+    token_hash TEXT UNIQUE NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    revoked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX user_sessions_teacher_id_idx ON user_sessions(teacher_id);
+CREATE INDEX user_sessions_expires_at_idx ON user_sessions(expires_at);
+```
+
+The raw session token is never stored in Supabase. AttendIQ stores its SHA-256 hash in `user_sessions`, keeps the opaque token in a browser cookie, validates its expiry on refresh, and revokes it during logout. If cookie persistence becomes temporarily unavailable, a successful teacher login remains valid for the current browser tab.
+
+### 5. Configure Streamlit secrets
+
+Create `.streamlit/secrets.toml` locally:
+
+```toml
+SUPABASE_URL = "https://your-project.supabase.co"
+SUPABASE_KEY = "your-supabase-key"
+```
+
+Do not commit real credentials. Add the same values to Streamlit Community Cloud's Secrets settings during deployment.
+
+### 6. Start the application
+
+```powershell
+.\venv\Scripts\python.exe -m streamlit run app.py
+```
+
+Open the URL shown in the terminal, normally `http://localhost:8501`.
+
+## Running tests
+
+```powershell
+.\venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py" -v
+```
+
+The suite covers multi-sample face matching, single-student verification, teacher session restoration and fallback, lecture separation, attendance corrections, database behavior, and key interface flows.
+
+## Deployment on Streamlit Community Cloud
+
+1. Push the project to a Git repository.
+2. Create a Streamlit Community Cloud app with `app.py` as the entry point.
+3. Add `SUPABASE_URL` and `SUPABASE_KEY` in the app's Secrets settings.
+4. Deploy or reboot the app so `requirements.txt` is installed, including `extra-streamlit-components==0.1.81`.
+5. Verify teacher login, refresh-based session restoration, logout, camera permissions, and microphone permissions over HTTPS.
+
+## Troubleshooting
+
+### `Unable to reach the teacher database`
+
+This means the request failed before credentials could be checked. Verify that:
+
+- `SUPABASE_URL` and `SUPABASE_KEY` are present and correct;
+- the Supabase project is active and reachable;
+- the machine or hosting service has internet access; and
+- `HTTP_PROXY`, `HTTPS_PROXY`, or `ALL_PROXY` is not pointing to an unavailable proxy.
+
+To inspect proxy variables in PowerShell:
+
+```powershell
+Get-ChildItem Env: | Where-Object Name -Match '^(HTTP|HTTPS|ALL|NO)_PROXY$'
+```
+
+If those variables point to an invalid local proxy, remove them from the current terminal and restart Streamlit:
+
+```powershell
+Remove-Item Env:HTTP_PROXY -ErrorAction SilentlyContinue
+Remove-Item Env:HTTPS_PROXY -ErrorAction SilentlyContinue
+Remove-Item Env:ALL_PROXY -ErrorAction SilentlyContinue
+.\venv\Scripts\python.exe -m streamlit run app.py
+```
+
+Do not remove proxy settings when your organization requires a working proxy; correct their values instead.
+
+### `Login succeeded, but the session could not be created`
+
+Confirm that:
+
+- the `user_sessions` table and its indexes exist;
+- `extra-streamlit-components==0.1.81` is installed in the environment running Streamlit;
+- the Supabase key can insert, select, update, and delete the required session rows; and
+- Streamlit was restarted after installing dependencies.
+
+Check the cookie dependency with:
+
+```powershell
+.\venv\Scripts\python.exe -c "import extra_streamlit_components; print('Cookie component installed')"
+```
+
+### Camera or microphone is unavailable
+
+- Use HTTPS in deployment and grant browser camera/microphone permissions.
+- Try a current version of Chrome, Edge, or Firefox.
+- Use AttendIQ's image or audio upload fallback when direct capture is unsupported.
+
+## Security and privacy
+
+AttendIQ processes biometric embeddings and educational attendance records. For production or institutional use:
+
+- obtain informed consent before collecting face or voice data;
+- configure Supabase Row Level Security and least-privilege policies;
+- use an appropriate server-side Supabase key without exposing it to users;
+- define retention and deletion policies for biometric information;
+- restrict teacher access and audit attendance changes; and
+- comply with applicable privacy, education, and biometric-data regulations.
+
+## Attendance integrity
+
+Every confirmed attendance run creates a dedicated lecture session. The original AI decision and final teacher-controlled status are stored separately. Manual corrections require a reason, preserving a reviewable history instead of silently overwriting the model result.
+
+---
+
+Built with Streamlit, Supabase, face recognition, and voice verification.
