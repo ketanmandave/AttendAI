@@ -1,15 +1,12 @@
-# 1. Convert one audio sample → voice embedding
-# 2. Compare one embedding with stored students → best student
-# 3. Split a long classroom audio → identify speakers from each segment
+# 1. Convert one audio sample -> voice embedding
+# 2. Compare one embedding with stored students = best student
+# 3. Split a long classroom audio --> identify speakers from each segment
 
 from resemblyzer import VoiceEncoder, preprocess_wav
 import numpy as np
 import librosa
 import streamlit as st
 import io
-
-# STEP 1: LOAD VOICE ENCODER
-# VoiceEncoder is heavy, so we load it only once.
 
 @st.cache_resource
 def load_voice_encoder():
@@ -18,7 +15,6 @@ def load_voice_encoder():
 
     return encoder
 
-# STEP 2: CONVERT AUDIO INTO VOICE EMBEDDING
 def get_voice_embedding(audio_bytes):
 
     try:
@@ -47,7 +43,7 @@ def get_voice_embedding(audio_bytes):
 
         return None
 
-# STEP 3: FIND WHICH STUDENT'S VOICE MATCHES
+
 def identify_speaker( new_voice_embedding, stored_student_voices, match_threshold=0.65):
 
     if new_voice_embedding is None or not stored_student_voices:
@@ -82,8 +78,6 @@ def identify_speaker( new_voice_embedding, stored_student_voices, match_threshol
     # Otherwise speaker is unknown.
     return None, best_similarity
 
-
-# STEP 4: PROCESS LONG / BULK CLASSROOM AUDIO
 def process_bulk_audio( audio_bytes, stored_student_voices, match_threshold=0.65 ):
     try:
         encoder = load_voice_encoder()

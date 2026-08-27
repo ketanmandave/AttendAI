@@ -83,8 +83,7 @@ def add_photos_dialog():
             "Take a classroom snapshot",
             key="attendance_dialog_camera",
         )
-        # Render this action in the placeholder above the camera preview so it
-        # stays visible after a photo is captured, even on short screens.
+
         with camera_action:
             if st.button(
                 "Add captured photo",

@@ -2,7 +2,6 @@ import streamlit as st
 
 st.set_page_config(
     page_title="AttendIQ | Smart Attendance",
-    page_icon="🎯",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -12,11 +11,16 @@ from src.screens.teacher_screen import teacher_screen
 from src.screens.student_screen import student_screen
 from src.screens.home_screen import home_screen
 from src.components.dialog_auto_enroll import auto_enroll_dialog
+from src.auth.session_manager import restore_teacher_session
 
 def main():
 
     if "login_type" not in st.session_state:
         st.session_state["login_type"] = None
+
+    # SESSION MANAGEMENT: Rebuild teacher_data from the signed-in browser's
+    # revocable cookie before deciding which screen to render.
+    restore_teacher_session()
 
     match st.session_state["login_type"]:
 

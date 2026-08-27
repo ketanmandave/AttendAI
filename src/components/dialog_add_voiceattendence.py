@@ -41,7 +41,7 @@ def _student_from_enrollment(enrollment):
 
 
 @st.dialog("Voice Attendance", width="medium")
-def voice_attendance_dialog(selected_subject_id):
+def voice_attendance_dialog(selected_subject_id, teacher_id, session_title):
     st.caption(
         "Ask students to speak one at a time. AttendIQ will compare each voice segment "
         "with enrolled voice profiles."
@@ -109,6 +109,9 @@ def voice_attendance_dialog(selected_subject_id):
                         "student_id": student_id,
                         "subject_id": selected_subject_id,
                         "timestamp": timestamp,
+                        # FEATURE 2: Keep the original voice-model decision even
+                        # if correction support is extended to this review later.
+                        "ai_is_present": is_present,
                         "is_present": is_present,
                     }
                 )
@@ -117,6 +120,15 @@ def voice_attendance_dialog(selected_subject_id):
                 "subject_id": selected_subject_id,
                 "dataframe": pd.DataFrame(results),
                 "logs": attendance_logs,
+                # FEATURE 2: Keep lecture metadata with the analyzed result until
+                # the teacher confirms and creates the permanent session.
+                "session_details": {
+                    "subject_id": selected_subject_id,
+                    "teacher_id": teacher_id,
+                    "title": session_title,
+                    "method": "voice",
+                    "started_at": timestamp,
+                },
             }
             st.session_state["voice_attendance_results"] = saved_result
         except Exception:
@@ -131,5 +143,5 @@ def voice_attendance_dialog(selected_subject_id):
             saved_result["logs"],
             source="voice",
             clear_images=False,
+            session_details=saved_result["session_details"],
         )
-

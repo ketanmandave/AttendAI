@@ -7,12 +7,15 @@ from src.ui.base_layout import (
     style_background_home,
     style_base_layout,
 )
+from src.ui.product_theme import style_product_ui
 
 
 def home_screen():
 
     style_background_home()
     style_base_layout()
+    # UI REDESIGN: Final shared styling removes the legacy mixed visual themes.
+    style_product_ui()
 
     # Header
     header_home()
@@ -28,10 +31,7 @@ def home_screen():
 
     col1, gap, col2 = st.columns([1, 0.08, 1])
 
-    # =====================================
     # Teacher Portal
-    # =====================================
-
     with col1:
 
         st.html("""
@@ -89,10 +89,8 @@ def home_screen():
             st.session_state["login_type"] = "teacher"
             st.rerun()
 
-    # =====================================
-    # Student Portal
-    # =====================================
 
+    # Student Portal
     with col2:
 
         st.html("""
@@ -150,10 +148,8 @@ def home_screen():
             st.session_state["login_type"] = "student"
             st.rerun()
 
-    # =====================================
-    # Feature Section
-    # =====================================
 
+    # Feature Section
     st.html("""
         <div class="feature-section">
 

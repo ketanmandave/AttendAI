@@ -1,5 +1,7 @@
 # For creating a web application
 streamlit
+# SESSION MANAGEMENT: Lets the browser keep the opaque teacher session token.
+extra-streamlit-components==0.1.81
 
 numpy
 pandas

@@ -1,4 +1,5 @@
 import logging
+import hashlib
 from html import escape
 
 import numpy as np
@@ -16,12 +17,14 @@ from src.database.db import (
     unenroll_student_from_subject,
 )
 from src.pipelines.facePipeline import (
+    analyze_face_image,
+    assess_image_quality,
     get_face_embeddings,
-    predict_attendance,
     train_classifier,
 )
 from src.pipelines.voicePipeline import get_voice_embedding, identify_speaker
 from src.ui.base_layout import style_background_dashboard, style_base_layout
+from src.ui.product_theme import style_product_ui
 
 
 logger = logging.getLogger(__name__)
@@ -79,7 +82,6 @@ def _style_student_portal():
         """
     )
 
-
 def _brand_bar(show_home=True):
     brand_col, action_col = st.columns([4, 1])
     with brand_col:
@@ -95,6 +97,19 @@ def _brand_bar(show_home=True):
         with action_col:
             st.write("")
             if st.button("← Home", width="stretch", key="student_home"):
+                st.session_state["login_type"] = None
+                st.rerun()
+    else:
+        with action_col:
+            st.write("")
+            if st.button("Sign out", width="stretch", key="student_sign_out"):
+                for key in (
+                    "student_data",
+                    "is_logged_in",
+                    "user_role",
+                    "student_auth_mode",
+                ):
+                    st.session_state.pop(key, None)
                 st.session_state["login_type"] = None
                 st.rerun()
 
@@ -160,15 +175,38 @@ def _face_login():
         try:
             image = np.array(Image.open(photo).convert("RGB"))
             with st.spinner("Comparing your face securely…"):
-                detected, _, face_count = predict_attendance(image)
+                # FEATURE 1: Validate the login image and preserve ambiguous
+                # matches instead of automatically choosing a similar student.
+                analysis = analyze_face_image(image)
+                face_count = analysis["face_count"]
+                matched_faces = [
+                    match
+                    for match in analysis["matches"]
+                    if match.get("status") == "matched"
+                ]
+                review_faces = [
+                    match
+                    for match in analysis["matches"]
+                    if match.get("status") == "needs_review"
+                ]
+            if not analysis["quality"]["accepted"]:
+                st.warning(
+                    "Photo rejected: " + " ".join(analysis["quality"]["reasons"])
+                )
+                return
             if face_count == 0:
                 st.warning("No face was detected. Improve the lighting and try again.")
             elif face_count > 1:
                 st.warning("More than one face was detected. Keep only your face in the frame.")
-            elif not detected:
+            elif review_faces:
+                st.warning(
+                    "This face is too similar to more than one profile. Use Voice ID "
+                    "or ask a teacher to review your registration."
+                )
+            elif not matched_faces:
                 st.error("We could not match this face to a registered student.")
             else:
-                student = _find_student(next(iter(detected)))
+                student = _find_student(matched_faces[0]["student_id"])
                 if student is None:
                     st.error("The face matched, but the student profile could not be loaded.")
                 else:
@@ -255,7 +293,7 @@ def _register_panel():
             """
             <div class="section-kicker">NEW PROFILE</div>
             <div class="section-title">Set up your student identity</div>
-            <div class="section-copy">Add one clear face photo. Voice enrollment is optional.</div>
+            <div class="section-copy">Add at least two clear face samples. Voice enrollment is optional.</div>
             """
         )
     with back_col:
@@ -274,11 +312,23 @@ def _register_panel():
             audio = _audio_input("student_enroll_voice")
         with biometric_col:
             st.markdown("#### 3. Face enrollment")
-            st.caption("Use good lighting and keep only one face in the frame.")
+            # FEATURE 1: One camera sample plus uploaded alternatives creates a
+            # more representative profile than a single enrollment photograph.
+            st.caption(
+                "Capture one photo and add at least one more sample. Use different "
+                "angles with good lighting and only one face in every image."
+            )
             photo = st.camera_input(
                 "Enrollment photo",
                 key="student_enrollment_photo",
                 label_visibility="collapsed",
+            )
+            additional_photos = st.file_uploader(
+                "Additional face samples",
+                type=["jpg", "jpeg", "png", "webp"],
+                accept_multiple_files=True,
+                key="student_additional_face_samples",
+                help="Upload up to four additional clear photos of the same student.",
             )
         st.divider()
         if st.button(
@@ -290,19 +340,59 @@ def _register_panel():
             if not name.strip():
                 st.warning("Enter your full name before continuing.")
                 return
-            if photo is None:
-                st.warning("Take a face photo before continuing.")
+            face_files = ([photo] if photo is not None else []) + list(
+                (additional_photos or [])[:4]
+            )
+            if len(face_files) < 2:
+                st.warning("Provide at least two face samples before continuing.")
                 return
             try:
-                image = np.array(Image.open(photo).convert("RGB"))
                 with st.spinner("Creating your secure biometric profile…"):
-                    face_embeddings = get_face_embeddings(image)
-                    if len(face_embeddings) == 0:
-                        st.warning("No face was detected. Retake the photo in better lighting.")
+                    # FEATURE 1: Validate every sample independently and reject
+                    # duplicates, blur, bad lighting, and multiple-face images.
+                    face_embeddings = []
+                    rejected_samples = []
+                    sample_hashes = set()
+                    for sample_number, face_file in enumerate(face_files, start=1):
+                        file_bytes = face_file.getvalue()
+                        file_hash = hashlib.sha256(file_bytes).hexdigest()
+                        if file_hash in sample_hashes:
+                            rejected_samples.append(
+                                f"Sample {sample_number}: duplicate image."
+                            )
+                            continue
+                        sample_hashes.add(file_hash)
+
+                        sample_image = np.array(Image.open(face_file).convert("RGB"))
+                        quality = assess_image_quality(sample_image)
+                        if not quality["accepted"]:
+                            rejected_samples.append(
+                                f"Sample {sample_number}: {' '.join(quality['reasons'])}"
+                            )
+                            continue
+
+                        sample_embeddings = get_face_embeddings(sample_image)
+                        if len(sample_embeddings) != 1:
+                            reason = (
+                                "no face detected"
+                                if not sample_embeddings
+                                else "multiple faces detected"
+                            )
+                            rejected_samples.append(
+                                f"Sample {sample_number}: {reason}."
+                            )
+                            continue
+                        face_embeddings.append(sample_embeddings[0])
+
+                    if rejected_samples:
+                        st.warning(" ".join(rejected_samples))
+                    if len(face_embeddings) < 2:
+                        st.error(
+                            "At least two valid, different face samples are required. "
+                            "Replace the rejected images and try again."
+                        )
                         return
-                    if len(face_embeddings) > 1:
-                        st.warning("Multiple faces were detected. Retake the photo by yourself.")
-                        return
+
                     voice_embedding = None
                     if audio is not None:
                         voice_embedding = get_voice_embedding(audio.getvalue())
@@ -312,7 +402,10 @@ def _register_panel():
                             )
                             return
                     created = create_student(
-                        name.strip(), face_embeddings[0].tolist(), voice_embedding
+                        name.strip(),
+                        face_embeddings[0].tolist(),
+                        voice_embedding,
+                        face_embeddings=[sample.tolist() for sample in face_embeddings],
                     )
                 if not created:
                     st.error("Your profile could not be saved. Please try again.")
@@ -329,56 +422,6 @@ def student_dashboard():
     student = st.session_state["student_data"]
     student_id = student["student_id"]
     _brand_bar(show_home=False)
-    _, action_right = st.columns([4, 1])
-    with action_right:
-        if st.button("Sign out", width="stretch", key="student_sign_out"):
-            for key in (
-                "student_data",
-                "is_logged_in",
-                "user_role",
-                "student_auth_mode",
-            ):
-                st.session_state.pop(key, None)
-            st.session_state["login_type"] = None
-            st.rerun()
-    safe_name = escape(str(student.get("name") or "Student"))
-    display_student_id = escape(str(student_id))
-    voice_status = "Enrolled" if student.get("voice_embedding") else "Not enrolled"
-    st.html(
-        f"""
-        <div class="profile-banner">
-            <div class="profile-avatar">✓</div>
-            <h1>Welcome, {safe_name}</h1>
-            <p>Your identity is verified and your student profile is ready.</p>
-        </div>
-        <div class="status-grid">
-            <div class="status-card"><span>Student ID</span><strong>#{display_student_id}</strong></div>
-            <div class="status-card"><span>Face ID</span><strong>✓ Enrolled</strong></div>
-            <div class="status-card"><span>Voice ID</span><strong>{voice_status}</strong></div>
-        </div>
-        """
-    )
-
-    title_col, enroll_col = st.columns([3, 1])
-    with title_col:
-        st.html(
-            """
-            <div class="section-kicker">COURSES</div>
-            <div class="section-title">Your enrolled subjects</div>
-            <div class="section-copy">View your attendance progress or join another subject.</div>
-            """
-        )
-    with enroll_col:
-        if st.button(
-            "＋ Enroll in subject",
-            type="primary",
-            width="stretch",
-            key="open_enroll_subject_dialog",
-        ):
-            enroll_dialog()
-
-    st.divider()
-
     try:
         with st.spinner("Loading your enrolled subjects…"):
             subjects = get_student_subjects(student_id)
@@ -398,6 +441,60 @@ def student_dashboard():
         if attendance_log.get("is_present"):
             stats_map[subject_key]["attended"] += 1
 
+    # UI REDESIGN: The first screen answers the student's main question—current
+    # attendance standing—before showing identity or enrollment details.
+    total_classes = sum(item["total"] for item in stats_map.values())
+    total_attended = sum(item["attended"] for item in stats_map.values())
+    overall_percentage = (
+        total_attended / total_classes * 100 if total_classes else 0.0
+    )
+    safe_name = escape(str(student.get("name") or "Student"))
+    display_student_id = escape(str(student_id))
+    standing = (
+        "Good standing"
+        if overall_percentage >= 75
+        else "Attendance needs attention"
+        if total_classes
+        else "No attendance recorded yet"
+    )
+    st.html(
+        f"""
+        <div class="iq-student-overview">
+            <div class="iq-eyebrow">STUDENT #{display_student_id}</div>
+            <h1>Hello, {safe_name}</h1>
+            <p>{standing}. Your overall attendance across enrolled subjects is shown below.</p>
+            <div class="iq-overall-score"><strong>{overall_percentage:.0f}%</strong><span>overall attendance</span></div>
+            <div class="iq-progress"><span style="width:{overall_percentage:.1f}%"></span></div>
+        </div>
+        """
+    )
+
+    metric_one, metric_two, metric_three = st.columns(3)
+    metric_one.metric("Classes recorded", total_classes)
+    metric_two.metric("Classes attended", total_attended)
+    metric_three.metric("Enrolled subjects", len(subjects))
+
+    title_col, enroll_col = st.columns([3, 1], vertical_alignment="bottom")
+    with title_col:
+        st.html(
+            """
+            <div class="iq-eyebrow" style="margin-top:24px">MY SUBJECTS</div>
+            <h2 style="margin:0;font-size:21px">Attendance by subject</h2>
+            <p style="margin:4px 0 0;font-size:12px">The recommended minimum is 75%.</p>
+            """
+        )
+    with enroll_col:
+        if st.button(
+            "Enroll in subject",
+            type="primary",
+            icon=":material/add:",
+            width="stretch",
+            key="open_enroll_subject_dialog",
+        ):
+            enroll_dialog()
+
+    st.divider()
+
     if not subjects:
         st.info("You have not enrolled in any subjects yet. Use the button above to join one.")
         footer_dashboard()
@@ -416,6 +513,16 @@ def student_dashboard():
         subject_code = subject.get("subject_code", "N/A")
         subject_section = subject.get("section", "N/A")
         stats = stats_map.get(str(subject_id), {"total": 0, "attended": 0})
+        attendance_percentage = (
+            stats["attended"] / stats["total"] * 100 if stats["total"] else 0.0
+        )
+        attendance_status = (
+            "Good standing"
+            if stats["total"] and attendance_percentage >= 75
+            else "Below 75%"
+            if stats["total"]
+            else "No records"
+        )
 
         def unenroll_button(
             course_id=subject_id,
@@ -449,10 +556,12 @@ def student_dashboard():
                 code=subject_code,
                 section=subject_section,
                 stats=[
-                    ("📅", "Total", stats["total"]),
-                    ("✅", "Attended", stats["attended"]),
+                    ("", "Classes", stats["total"]),
+                    ("", "Present", stats["attended"]),
                 ],
                 footer_callback=unenroll_button,
+                progress=attendance_percentage,
+                status=attendance_status,
             )
 
     footer_dashboard()
@@ -462,6 +571,8 @@ def student_screen():
     style_background_dashboard()
     style_base_layout()
     _style_student_portal()
+    # UI REDESIGN: Load the shared final layer after older student-specific CSS.
+    style_product_ui()
     if st.session_state.get("student_data"):
         student_dashboard()
         return
